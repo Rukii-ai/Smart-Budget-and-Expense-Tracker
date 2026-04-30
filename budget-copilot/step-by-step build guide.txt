@@ -1,0 +1,10 @@
+1) Went to main.py and set up an instance of FASTAPI, get health async 
+fucnction, read root async function and uvicorn
+
+2) Went to db and decided the particular db engine I'd use (Here I used SQLite), 
+set up the db config file, went to .env and added in the database url. In app/db/
+created a file called database.py where I put in all database setup code.
+When the file runs properly os is imported, load_dotenv is imported, from 
+sqlacademy creat_engine, sessionmaker and declarative_base is imported
+load_dotenv() is called, the DATABASE_URL is read, the engine, Session and Base
+are created
