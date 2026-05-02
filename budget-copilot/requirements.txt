@@ -1,9 +1,12 @@
+# Core app/runtime dependencies
 fastapi==0.104.1
 uvicorn==0.24.0
 pydantic==2.4.2
 sqlalchemy==2.0.23
 typer==0.9.0
 python-dotenv==1.0.0
+
+# Optional data/ML packages for notebooks and future model work
 numpy==1.24.3
 pandas==2.1.3
 scikit-learn==1.3.2

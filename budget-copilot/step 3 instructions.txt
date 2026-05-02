@@ -1,0 +1,168 @@
+Optimizing tool selection...I'll break down Step 3 into clear, beginner-friendly steps. Think of this like building a bridge — you need a solid plan before laying bricks.
+
+## 🎯 High-Level Flow (What Happens)
+
+User fills quiz → clicks submit → your backend:
+1. Reads the 20 answers
+2. Converts answers into numbers (a "vector")
+3. Compares this vector against 50 budget templates (also vectors)
+4. Finds the closest match
+5. Returns that budget to the user
+
+---
+
+## 📋 Step-by-Step Plan (DO THIS IN ORDER)
+
+### **Phase 1: Setup (Prep Work)**
+
+**Step 1a: Create your 50 budget templates**
+- **Where**: Create a new file `data/budgets.json`
+- **What goes in it**: 50 different budget templates
+- Each template needs:
+  - An ID (1-50)
+  - A "features" dict (what kind of person this budget is for: low income? high dependents? thrifty?)
+  - An "allocation" dict (percentages: 25% food, 30% rent, etc.)
+- Think deeply about variation: Some budgets for students, some for families, some for entrepreneurs
+- **Task for you**: Hand-create these 50 templates (you can use a generator script later, but start simple)
+
+**Step 1b: Understand the structure**
+- Each template should be logically different (not random noise)
+- Example: Template 1 could be "student, low income, rent, no dependents" → lots for food, little for savings
+- Example: Template 2 could be "married, high income, mortgage, 2 dependents" → lots for mortgage, balanced savings
+
+---
+
+### **Phase 2: Backend Schemas (Data Models)**
+
+**Step 2: Create quiz input/output schemas**
+- **Where**: Create `app/schemas/quiz.py`
+- **What to do**:
+  - Define a `QuizAnswers` Pydantic schema (takes the 20 quiz answers as input)
+  - Define a `BudgetRecommendation` schema (returns the recommended budget)
+- **Why**: This tells FastAPI what shape of data to expect and what to return
+- **Task for you**: Create these two Pydantic models — look at your existing schemas for examples
+
+---
+
+### **Phase 3: The Core Logic (Encoding & Matching)**
+
+**Step 3a: Implement quiz answer encoding**
+- **Where**: Inside `app/services/budget_engine.py`
+- **What to do**: Create a function that takes the 20 quiz answers and converts them into a feature vector (a list of numbers)
+- **Example**:
+  - Question: "Income range?" → Answer: "₦150k–₦500k" → Encode as: `2` (on a 0-3 scale)
+  - Question: "Dependents?" → Answer: "1–2" → Encode as: `1` (on a 0-2 scale)
+  - Result: `[2, 1, 0, 1, 2, ...]` (20 numbers total)
+- **Task for you**: Implement a function `encode_quiz_answers(answers)` that does this
+  - Think about: How do you map each answer option to a number? (Be consistent!)
+
+**Step 3b: Load and prepare budget templates**
+- **Where**: Inside `app/services/budget_engine.py`
+- **What to do**: Create a function that reads `data/budgets.json` and converts the feature part of each template into vectors too
+- **Task for you**: Implement a function `load_budget_templates()` that:
+  - Reads the JSON file
+  - Extracts the "features" from each template
+  - Converts features to vectors (same way you did in Step 3a)
+  - Returns a list of (template_id, feature_vector, allocation)
+
+**Step 3c: Implement cosine similarity**
+- **Where**: Inside `app/services/budget_engine.py`
+- **What to do**: Create a function that computes similarity between two vectors
+- **Important**: Use `numpy` (it's already in requirements) — it has built-in cosine similarity helpers
+- **Task for you**: Implement a function `cosine_similarity(vector1, vector2)` that:
+  - Takes two vectors (lists of numbers)
+  - Returns a number between 0 and 1 (1 = perfect match, 0 = opposite)
+- **Hint**: You can use `from sklearn.metrics.pairwise import cosine_similarity` (it's in requirements)
+
+**Step 3d: Find best match**
+- **Where**: Inside `app/services/budget_engine.py`
+- **What to do**: Create a function that compares the user's vector against all 50 templates and returns the best match
+- **Task for you**: Implement a function `recommend_budget(quiz_feature_vector)` that:
+  - Loads all 50 templates
+  - Computes similarity for each one
+  - Returns the template with the highest similarity score
+
+---
+
+### **Phase 4: The API Endpoint**
+
+**Step 4: Create the POST endpoint**
+- **Where**: Create `app/api/quiz.py`
+- **What to do**: Create a FastAPI route `POST /quiz/submit`
+- **What it does**:
+  1. Takes quiz answers (as `QuizAnswers` schema)
+  2. Encodes them
+  3. Calls `recommend_budget()` from budget_engine
+  4. Returns the winning budget (as `BudgetRecommendation`)
+- **Task for you**: Write the endpoint function
+  - Look at your health check endpoint in main.py for reference
+  - Import the budget_engine functions
+  - Make it simple: receive → encode → recommend → return
+
+**Step 5: Register the endpoint**
+- **Where**: `app/main.py`
+- **What to do**: Import your new quiz router and register it with the FastAPI app
+- **Task for you**: Add the import and include the router (look for how services are currently imported)
+
+---
+
+## 🧠 Key Concepts to Understand
+
+**Encoding**:
+- Convert human answers (text) into numbers so math can work on them
+- Must be consistent: always map "low income" to the same number
+
+**Vectors**:
+- Just a list of numbers: `[1, 2, 0, 3, 1, ...]`
+- Order matters: position 0 is always income level, position 1 is always dependents, etc.
+
+**Cosine Similarity**:
+- Think of it like: "How similar is this quiz answer vector to this budget template vector?"
+- Higher number = more similar
+- Don't overthink it — just use sklearn's function
+
+**Templates**:
+- You're not trying to be 100% accurate
+- Synthetic data (made-up, logical variations) is fine
+- The point is to have diverse options for users to match against
+
+---
+
+## ✅ Checklist (Do This Order)
+
+1. ☐ Create `data/budgets.json` with 50 templates (hand-craft logically different ones)
+2. ☐ Create `app/schemas/quiz.py` with `QuizAnswers` and `BudgetRecommendation` schemas
+3. ☐ In budget_engine.py:
+   - ☐ Implement `encode_quiz_answers(answers)` function
+   - ☐ Implement `load_budget_templates()` function
+   - ☐ Implement `cosine_similarity(v1, v2)` function
+   - ☐ Implement `recommend_budget(vector)` function
+4. ☐ Create `app/api/quiz.py` with the POST endpoint
+5. ☐ Update `app/main.py` to register the quiz router
+6. ☐ Test with curl or Postman
+
+---
+
+## 🚀 Testing After You Implement
+
+```powershell
+curl.exe -X POST http://127.0.0.1:8000/quiz/submit `
+  -Header "Content-Type: application/json" `
+  -Body @'
+{
+  "income_range": "150k-500k",
+  "marital_status": "single",
+  "dependents": 0,
+  "housing": "rent",
+  ...more answers...
+}
+'@
+```
+
+Should return a recommended budget with allocation percentages.
+
+---
+
+Start with **Phase 1** — create those 50 thoughtful budget templates first. That's your foundation. Once you have that, everything else flows from it.
+
+Want me to clarify any step before you start?
