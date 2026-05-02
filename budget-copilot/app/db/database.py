@@ -27,3 +27,25 @@ SessionLocal = sessionmaker(
 
 # Create a base class for our models to inherit from
 Base = declarative_base()
+
+
+def get_db():
+    """Get a database session for use when requests are made.
+
+    Yields a database session and ensures it is properly closed after use.
+    Used with FastAPI dependency injection to provide database access.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def init_db():
+    """Create all database tables based on defined models.
+    
+    This should be called once on application startup to ensure
+    all required tables exist in the connected database.
+    """
+    Base.metadata.create_all(bind=engine)

@@ -3,12 +3,31 @@
 # Importing service modules to ensure they are registered
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+import logging
+
+import app.database_models
+from app.db import init_db
+
+# Set up logging for the application
+logger = logging.getLogger(__name__)
+
+# Initialize the database when the application starts
+@asynccontextmanager
+async def db_startup(app):
+    # Startup code
+    logger.info("Initializing database...")
+    init_db()
+    logger.info("Database initialized successfully!")
+    yield
+    # Cleanup code (optional)
 
 # Initialize FastAPI app
 app = FastAPI(
     title="Budget Copilot",
     description="Intelligent budget management and expense tracking API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=db_startup
 )
 
 # Health check endpoint
